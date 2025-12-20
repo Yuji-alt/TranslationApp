@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_history"
+            android:icon="@android:drawable/ic_menu_recent_history"
+            android:title="Translation History"
+            app:tint="@color/purple"/>
+        <item
+            android:id="@+id/nav_saved"
+            android:icon="@android:drawable/ic_menu_save"
+            android:title="Saved Phrases"
+            app:tint="@color/purple"/>
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@android:drawable/ic_menu_preferences"
+            android:title="Settings"
+            app:tint="@color/purple"/>
+        <item
+            android:id="@+id/downloaded_language"
+            android:icon="@drawable/ic_download"
+            android:title="Download Language"
+            app:tint="@color/purple" />
+    </group>
+</menu>
