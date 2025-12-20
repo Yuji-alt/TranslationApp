@@ -49,8 +49,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        // ... (Your existing findViewByIds remain the same) ...
         etInput = findViewById(R.id.etInputText)
         tvResult = findViewById(R.id.tvTranslatedText)
         tvSourceLang = findViewById(R.id.tvSourceLang)
@@ -60,13 +58,12 @@ class MainActivity : AppCompatActivity() {
         navView = findViewById(R.id.navView)
         val btnMenu = findViewById<ImageButton>(R.id.btnMenu)
 
-        // 1. CALL THE NEW AUTO-DOWNLOAD FUNCTION HERE
+        // 1. AUTO-DOWNLOAD FUNCTION
         downloadDefaultLanguages()
 
         // 2. Initialize Translator
         prepareTranslator()
 
-        // ... (Rest of your listeners remain the same) ...
         etInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -101,65 +98,54 @@ class MainActivity : AppCompatActivity() {
 
         btnSwitch.setOnClickListener { swapLanguages() }
     }
-
-    // --- NEW FUNCTION: Downloads English and Tagalog automatically ---
     private fun downloadDefaultLanguages() {
         val languagesToDownload = listOf(TranslateLanguage.ENGLISH, TranslateLanguage.TAGALOG)
-
-        // You can remove .requireWifi() if you want to allow mobile data
         val conditions = DownloadConditions.Builder()
-            .requireWifi()
             .build()
 
         for (langCode in languagesToDownload) {
             val model = TranslateRemoteModel.Builder(langCode).build()
-
             modelManager.download(model, conditions)
                 .addOnSuccessListener {
-                    // Log success (Invisible to user, but nice for debugging)
                     Log.d("AutoDownload", "Model $langCode downloaded successfully")
                 }
                 .addOnFailureListener {
-                    // Log failure (Maybe no internet)
                     Log.e("AutoDownload", "Failed to download $langCode")
                 }
         }
     }
 
-    // ... (Keep your showLanguageSelectionDialog, prepareTranslator, translateText, swapLanguages, onDestroy as is) ...
-    // Note: In showLanguageSelectionDialog, you can keep your "manual add" code for Tagalog/English
-    // just in case the download hasn't finished yet when they click the dropdown.
-
     private fun showLanguageSelectionDialog(isSource: Boolean) {
+        // 1. Ask ML Kit: "What is fully downloaded?"
         modelManager.getDownloadedModels(TranslateRemoteModel::class.java)
             .addOnSuccessListener { models ->
+
                 val availableLanguages = ArrayList<Pair<String, String>>()
-
-                // IMPORTANT: Always add English and Tagalog manually so they appear in the list
-                // even if they are still downloading in the background.
-                availableLanguages.add(Pair("English", TranslateLanguage.ENGLISH))
-                availableLanguages.add(Pair("Tagalog", TranslateLanguage.TAGALOG))
-
+                // 2. Add ONLY what ML Kit says is ready
                 for (model in models) {
                     val code = model.language
                     val name = Locale(code).displayLanguage
 
-                    // Prevent duplicates
-                    if (code != TranslateLanguage.ENGLISH && code != TranslateLanguage.TAGALOG) {
-                        availableLanguages.add(Pair(name, code))
-                    }
+                    availableLanguages.add(Pair(name, code))
                 }
 
+                // Sort alphabetically
                 availableLanguages.sortBy { it.first }
 
-                // ... (The rest of your Dialog code stays exactly the same) ...
+                // Check if list is empty (Optional: Show a message if nothing is downloaded yet)
+                if (availableLanguages.isEmpty()) {
+                    Toast.makeText(this, "No languages downloaded yet. Please wait.", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
+                // 3. Setup the Dialog (Visuals)
                 val languageNames = availableLanguages.map { it.first }.toTypedArray()
 
                 val titleView = TextView(this)
                 titleView.text = if (isSource) "Select Source Language" else "Select Target Language"
                 titleView.textSize = 20f
                 titleView.setPadding(60, 60, 60, 30)
-                titleView.setTextColor(Color.parseColor("#6200EE")) // Changed R.color.purple to Color.parseColor for safety
+                titleView.setTextColor(Color.parseColor("#6200EE"))
                 titleView.setTypeface(null, Typeface.BOLD)
 
                 val adapter = object : ArrayAdapter<String>(
@@ -195,9 +181,10 @@ class MainActivity : AppCompatActivity() {
                     }
                     .show()
             }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error fetching languages", Toast.LENGTH_SHORT).show()
+            }
     }
-
-    // ... (Keep prepareTranslator, translateText, swapLanguages, onDestroy as is) ...
     private fun prepareTranslator() {
         translator?.close()
         val options = TranslatorOptions.Builder()
