@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="TranslationApp.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-12-29T07:49:51.040532700Z">
+        <DropdownSelection timestamp="2026-01-05T05:28:43.272770500Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Equinox\.android\avd\Medium_Phone.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=55MRROAAZXY9CY8X" />
             </handle>
           </Target>
         </DropdownSelection>

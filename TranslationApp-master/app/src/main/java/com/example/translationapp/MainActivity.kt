@@ -85,7 +85,13 @@ class MainActivity : AppCompatActivity() {
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_history -> { }
-                R.id.nav_saved -> { }
+
+                // --- UPDATED NAVIGATION FOR STEP 5 ---
+                R.id.nav_saved -> {
+                    val intent = Intent(this, FamiliarizationActivity::class.java)
+                    startActivity(intent)
+                }
+                // -------------------------------------
 
                 // This opens your Language Detector
                 R.id.nav_settings -> {
@@ -212,7 +218,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun translateText(text: String) {
         translator?.translate(text)
-            ?.addOnSuccessListener { tvResult.text = it }
+            ?.addOnSuccessListener { resultText ->
+                tvResult.text = resultText
+
+                // --- ADDED FOR STEP 2: POINTS SYSTEM ---
+                // This adds +1 point to the target language every time a translation finishes
+                FamiliarizationManager.addPoint(this, targetLangCode)
+                // ---------------------------------------
+            }
             ?.addOnFailureListener { tvResult.text = "Error" }
     }
 

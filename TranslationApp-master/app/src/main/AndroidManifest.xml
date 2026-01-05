@@ -21,8 +21,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity android:name=".LanguageManager.LanguageManagerActivity" />
         <activity android:name=".RecognitionActivity" />
+
+        <activity android:name=".FamiliarizationActivity" />
+
     </application>
 
 </manifest>
