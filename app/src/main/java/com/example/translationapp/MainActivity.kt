@@ -1,8 +1,13 @@
 package com.example.translationapp
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -19,6 +24,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.example.translationapp.LanguageManager.LanguageManagerActivity
+import com.example.translationapp.farmiliarization.FamiliarizationActivity
+import com.example.translationapp.farmiliarization.FamiliarizationManager
 import com.google.android.material.navigation.NavigationView
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.common.model.RemoteModelManager
@@ -31,7 +38,6 @@ import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
-    // ... (Your existing variables remain the same) ...
     private lateinit var etInput: EditText
     private lateinit var tvResult: TextView
     private lateinit var tvSourceLang: TextView
@@ -42,6 +48,8 @@ class MainActivity : AppCompatActivity() {
 
     private var translator: Translator? = null
     private val modelManager = RemoteModelManager.getInstance()
+    private lateinit var connectivityManager: ConnectivityManager
+    private lateinit var networkCallback: ConnectivityManager.NetworkCallback
 
     private var sourceLangCode = TranslateLanguage.ENGLISH
     private var targetLangCode = TranslateLanguage.TAGALOG
@@ -56,6 +64,7 @@ class MainActivity : AppCompatActivity() {
         btnSwitch = findViewById(R.id.btnSwitchLanguages)
         drawerLayout = findViewById(R.id.drawerLayout)
         navView = findViewById(R.id.navView)
+        navView = findViewById(R.id.navView)
         val btnMenu = findViewById<ImageButton>(R.id.btnMenu)
 
         // 1. AUTO-DOWNLOAD FUNCTION
@@ -63,6 +72,8 @@ class MainActivity : AppCompatActivity() {
 
         // 2. Initialize Translator
         prepareTranslator()
+
+        monitorNetworkStatus()
 
         etInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -84,11 +95,21 @@ class MainActivity : AppCompatActivity() {
 
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
-                R.id.nav_history -> { }
-                R.id.nav_saved -> { }
-                R.id.nav_settings -> { }
+                R.id.nav_saved -> {
+                    val intent = Intent(this, FamiliarizationActivity::class.java)
+                    startActivity(intent)
+                }
+                R.id.nav_settings -> {
+                    val intent = Intent(this, RecognitionActivity::class.java)
+                    startActivity(intent)
+                }
+
                 R.id.downloaded_language -> {
                     val intent = Intent(this, LanguageManagerActivity::class.java)
+                    startActivity(intent)
+                }
+                R.id.nav_camera -> {
+                    val intent = Intent(this, CameraScanActivity::class.java)
                     startActivity(intent)
                 }
             }
@@ -201,8 +222,46 @@ class MainActivity : AppCompatActivity() {
 
     private fun translateText(text: String) {
         translator?.translate(text)
-            ?.addOnSuccessListener { tvResult.text = it }
+            ?.addOnSuccessListener { resultText ->
+                tvResult.text = resultText
+
+                // --- ADDED FOR STEP 2: POINTS SYSTEM ---
+                // This adds +1 point to the target language every time a translation finishes
+                FamiliarizationManager.addPoint(this, targetLangCode)
+                // ---------------------------------------
+            }
             ?.addOnFailureListener { tvResult.text = "Error" }
+    }
+    private fun monitorNetworkStatus() {
+        val headerView = navView.getHeaderView(0)
+        val tvStatus = headerView.findViewById<TextView>(R.id.tvConnectionStatus)
+
+        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            // Function runs when Internet is AVAILABLE
+            override fun onAvailable(network: Network) {
+                runOnUiThread {
+                    tvStatus.text = "Online Mode"
+                    tvStatus.setTextColor(Color.parseColor("#4CAF50")) // Green
+                }
+            }
+
+            // Function runs when Internet is LOST
+            override fun onLost(network: Network) {
+                runOnUiThread {
+                    tvStatus.text = "Offline Mode"
+                    tvStatus.setTextColor(Color.LTGRAY) // Light Gray
+                }
+            }
+        }
+
+        // Register the listener
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        connectivityManager.registerNetworkCallback(request, networkCallback)
     }
 
     private fun swapLanguages() {

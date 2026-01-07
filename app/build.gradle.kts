@@ -39,12 +39,20 @@ android {
 
 dependencies {
     implementation("com.google.mlkit:translate:17.0.3")
+
+    //camera detection
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.camera.view)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("com.google.mlkit:language-id:17.0.6")
 }

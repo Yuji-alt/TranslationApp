@@ -3,6 +3,7 @@ package com.example.translationapp.LanguageManager
 import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
+import androidx.appcompat.widget.SearchView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -20,6 +21,7 @@ class LanguageManagerActivity : AppCompatActivity() {
 
     private lateinit var rvLanguages: RecyclerView
     private lateinit var progressBar: ProgressBar
+    private lateinit var searchView: SearchView
     private lateinit var adapter: LanguageAdapter
     private val languageList = ArrayList<LanguageModel>()
 
@@ -32,6 +34,7 @@ class LanguageManagerActivity : AppCompatActivity() {
 
         rvLanguages = findViewById(R.id.rvLanguages)
         progressBar = findViewById(R.id.progressBar)
+        searchView = findViewById(R.id.searchView)
 
         rvLanguages.layoutManager = LinearLayoutManager(this)
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
@@ -39,7 +42,35 @@ class LanguageManagerActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowHomeEnabled(true)
         // Load data
+        setupSearch()
         loadLanguages()
+    }
+    private fun setupSearch() {
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                filter(newText)
+                return true
+            }
+        })
+    }
+    private fun filter(text: String?) {
+        val query = text?.lowercase(Locale.getDefault()) ?: ""
+
+        val filteredList = if (query.isEmpty()) {
+            languageList // If empty, show full list
+        } else {
+            // Filter the Master List
+            languageList.filter {
+                it.name.lowercase(Locale.getDefault()).contains(query)
+            }
+        }
+        if (::adapter.isInitialized) {
+            adapter.updateList(filteredList)
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -92,8 +123,10 @@ class LanguageManagerActivity : AppCompatActivity() {
 
 
     private fun downloadLanguage(lang: LanguageModel) {
-        Toast.makeText(this, "Downloading ${lang.name}...", Toast.LENGTH_SHORT).show()
-        progressBar.visibility = View.VISIBLE
+
+        // 1. Update UI State
+        lang.isDownloading = true
+        adapter.notifyDataSetChanged() // Refresh visible list safely
 
         val model = TranslateRemoteModel.Builder(lang.code).build()
         val conditions = DownloadConditions.Builder().requireWifi().build()
@@ -101,11 +134,12 @@ class LanguageManagerActivity : AppCompatActivity() {
         modelManager.download(model, conditions)
             .addOnSuccessListener {
                 Toast.makeText(this, "${lang.name} Downloaded!", Toast.LENGTH_SHORT).show()
-                refreshList() // Reload UI to show new status
+                refreshList() // This reloads the master list
             }
             .addOnFailureListener {
+                lang.isDownloading = false
+                adapter.notifyDataSetChanged()
                 Toast.makeText(this, "Download Failed", Toast.LENGTH_SHORT).show()
-                progressBar.visibility = View.GONE
             }
     }
 
@@ -115,7 +149,7 @@ class LanguageManagerActivity : AppCompatActivity() {
         modelManager.deleteDownloadedModel(model)
             .addOnSuccessListener {
                 Toast.makeText(this, "${lang.name} Deleted", Toast.LENGTH_SHORT).show()
-                refreshList() // Reload UI
+                refreshList()
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Delete Failed", Toast.LENGTH_SHORT).show()
